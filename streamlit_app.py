@@ -121,28 +121,31 @@ def main():
     )
 
     def generate_response(prompt):
+        prompt = prompt.lower()
+        if "page 1" in prompt:
+            return "(Directing user to Page 1...)"
+        elif "page 2" in prompt:
+            return "(Directing user to Page 2...)"
+        elif "page 3" in prompt:
+            return "(Directing user to Page 3...)"
+        else:
+            return f"You say: {prompt}."
 
-        prompt_template = f"Give me a story started from '{prompt}'"
-        prompt_template = story_template.replace('##PROMPT##',prompt)
-        # prompt_template = classification_template.replace('##PROMPT##',prompt)
-        result = user_proxy.initiate_chat(
-        recipient=assistant,
-        message=prompt_template
-        )
-
-        response = result.summary
-        return response
 
     # Chat function section (timing included inside function)
     def chat(prompt: str):
-        st_c_chat.chat_message("user",avatar=user_image).write(prompt)
+        st_c_chat.chat_message("user", avatar=user_image).write(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         response = generate_response(prompt)
-        # response = f"You type: {prompt}"
         st.session_state.messages.append({"role": "assistant", "content": response})
-        st_c_chat.chat_message("assistant").write_stream(stream_data(response))
-
+        
+        # If the response contains an image link, render the image
+        if "![image]" in response:
+            image_url = response.split("](")[1][:-1]  # Extract URL from markdown
+            st_c_chat.chat_message("assistant").image(image_url, caption="Requested Image", use_container_width=True)
+        else:
+            st_c_chat.chat_message("assistant").write_stream(stream_data(response))
     
     if prompt := st.chat_input(placeholder=placeholderstr, key="chat_bot"):
         chat(prompt)
